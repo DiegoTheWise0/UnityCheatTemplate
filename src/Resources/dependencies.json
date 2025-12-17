@@ -1,0 +1,8 @@
+{
+  "Dependencies": [
+    "0Harmony.dll",
+    "MonoMod.RuntimeDetour.dll",
+    "MonoMod.Utils.dll",
+    "Mono.Cecil.dll"
+  ]
+}
