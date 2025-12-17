@@ -85,7 +85,6 @@ internal class CheatMenuUI : ILoadable, ISingleton
     {
         if (!_loaded) return;
 
-        GUI.skin = Theme.Skin;
         _style ??= new GUIStyle(GUI.skin.label)
         {
             normal = { textColor = Color.white },
