@@ -96,12 +96,12 @@ internal static class ReflectExtension
         prop.SetValue(obj, value);
     }
 
-    internal static IEnumerator GetCoroutine(this object obj, string name, params object[] parameters)
+    internal static IEnumerator? GetCoroutine(this object obj, string name, params object[] parameters)
     {
         if (obj == null) return default;
 
-        object coroutineResult = obj.InvokeMethod(name, parameters);
-        return (IEnumerator)coroutineResult;
+        object? coroutineResult = obj.InvokeMethod(name, parameters);
+        return (IEnumerator?)coroutineResult;
     }
 
     internal static IEnumerator GetStaticCoroutine(this Type type, string name, params object[] parameters)
@@ -111,7 +111,7 @@ internal static class ReflectExtension
     }
 
     // ==== Method Operations (Cached) ====
-    internal static object InvokeMethod(this object obj, string name, params object[] parameters)
+    internal static object? InvokeMethod(this object obj, string name, params object[] parameters)
     {
         if (obj == null) return default;
 

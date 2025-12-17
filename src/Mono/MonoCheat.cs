@@ -1,3 +1,5 @@
+#pragma warning disable CS8618
+
 using HarmonyLib;
 using UnityCheatTemplate.Modules;
 using UnityCheatTemplate.Modules.Menu.Core;

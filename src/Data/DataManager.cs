@@ -1,4 +1,7 @@
-﻿using UnityCheatTemplate.Data.Json;
+﻿#pragma warning disable CS8618
+#pragma warning disable CS8625
+
+using UnityCheatTemplate.Data.Json;
 using UnityCheatTemplate.Interfaces;
 
 namespace UnityCheatTemplate.Data;

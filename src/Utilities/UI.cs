@@ -294,7 +294,7 @@ internal static class UI
                 GUILayout.EndScrollView();
                 GUILayout.EndVertical();
 
-                if (Event.current.type == EventType.MouseDown &&
+                if (Event.current?.type == EventType.MouseDown &&
                     !GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
                 {
                     state.IsExpanded = false;
