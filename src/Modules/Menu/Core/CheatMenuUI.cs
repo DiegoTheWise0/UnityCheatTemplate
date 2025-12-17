@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using UnityCheatTemplate.Data;
 using UnityCheatTemplate.Enums;
 using UnityCheatTemplate.Interfaces;
 using UnityCheatTemplate.Utilities;
@@ -168,7 +169,7 @@ internal class CheatMenuUI : ILoadable, ISingleton
 
         GUI.backgroundColor = new Color(23f / 255f, 23f / 255f, 23f / 255f, 1f);
         GUI.contentColor = Color.white;
-        GUI.color = Color.white;
+        GUI.color = Singleton<DataManager>.Instance.SettingsFile.c_Theme;
 
         string watermark = $"{CheatInfo.Name} | v{CheatInfo.Version}";
         if (!_isOpen)
@@ -190,7 +191,7 @@ internal class CheatMenuUI : ILoadable, ISingleton
         float tooltipHeight = tooltipStyle.CalcHeight(tooltipContent, tooltipWidth - 10f) + 10f;
 
         Vector2 mousePos = Event.current.mousePosition;
-        var theme = Color.white;
+        var theme = Singleton<DataManager>.Instance.SettingsFile.c_Theme;
         GUI.color = new Color(theme.r, theme.g, theme.b, 0.8f);
 
         Rect tooltipRect = new(mousePos.x + 20f, mousePos.y + 20f, tooltipWidth, tooltipHeight);

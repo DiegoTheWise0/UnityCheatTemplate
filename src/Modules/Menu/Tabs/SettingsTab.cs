@@ -15,5 +15,6 @@ internal class SettingsTab : CheatMenuTab
     internal override void OnGUI()
     {
         UI.Button("Save Settings", "Save the current settings", Singleton<DataManager>.Instance.Save);
+        UI.ColorPicker(ref Singleton<DataManager>.Instance.SettingsFile.c_Theme, "Menu Theme");
     }
 }
