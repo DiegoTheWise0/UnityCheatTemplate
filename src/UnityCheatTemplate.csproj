@@ -20,10 +20,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Reference Include="System.Windows.Forms" />
-	</ItemGroup>
-
-	<ItemGroup>
 	  <Folder Include="References\Game\" />
 	  <Folder Include="References\Unity\" />
 	</ItemGroup>

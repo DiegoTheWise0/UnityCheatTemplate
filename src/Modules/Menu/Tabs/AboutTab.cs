@@ -11,7 +11,7 @@ internal class AboutTab : CheatMenuTab
 
     internal override void OnGUI()
     {
-        string info = "Put about here";
+        string info = "";
         GUILayout.Label(info, GUI.skin.textArea, GUILayout.ExpandHeight(true));
     }
 }

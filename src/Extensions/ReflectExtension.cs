@@ -9,62 +9,60 @@ internal static class ReflectExtension
     private const BindingFlags NonPublicFlags = BindingFlags.NonPublic | BindingFlags.Instance;
     private const BindingFlags NonPublicStaticFlags = BindingFlags.NonPublic | BindingFlags.Static;
 
-    // Caches for FieldInfo, PropertyInfo, MethodInfo, and Type lookups
-    private static readonly ConcurrentDictionary<string, FieldInfo> _fieldCache = new();
-    private static readonly ConcurrentDictionary<string, PropertyInfo> _propertyCache = new();
-    private static readonly ConcurrentDictionary<string, MethodInfo> _methodCache = new();
-    private static readonly ConcurrentDictionary<string, Type> _nestedTypeCache = new();
+    // Caches with tuple keys for better performance and type safety
+    private static readonly ConcurrentDictionary<(Type, string), FieldInfo> _fieldCache = new();
+    private static readonly ConcurrentDictionary<(Type, string), PropertyInfo> _propertyCache = new();
+    private static readonly ConcurrentDictionary<(Type, string, Type[]?), MethodInfo> _methodCache = new();
+    private static readonly ConcurrentDictionary<(Type, string), Type> _nestedTypeCache = new();
 
     // ==== Field Operations (Cached) ====
     internal static T? GetField<T>(this object obj, string name)
     {
         if (obj == null) return default;
 
-        string cacheKey = $"{obj.GetType().FullName}:{name}";
-        if (!_fieldCache.TryGetValue(cacheKey, out var field))
-        {
-            field = obj.GetType().GetField(name, NonPublicFlags) ?? throw new MissingFieldException($"Field '{name}' not found");
-            _fieldCache[cacheKey] = field;
-        }
-        return (T)field.GetValue(obj);
+        var field = GetFieldInfo(obj.GetType(), name, isStatic: false);
+        var value = field.GetValue(obj);
+
+        return value is T typedValue ? typedValue : default;
     }
 
     internal static void SetField<T>(this object obj, string name, T value)
     {
         if (obj == null) return;
 
-        string cacheKey = $"{obj.GetType().FullName}:{name}";
-        if (!_fieldCache.TryGetValue(cacheKey, out var field))
-        {
-            field = obj.GetType().GetField(name, NonPublicFlags) ?? throw new MissingFieldException($"Field '{name}' not found");
-            _fieldCache[cacheKey] = field;
-        }
+        var field = GetFieldInfo(obj.GetType(), name, isStatic: false);
         field.SetValue(obj, value);
     }
 
     // ==== Static Field Operations (Cached) ====
     internal static T GetStaticField<T>(this Type type, string name)
     {
-        string cacheKey = $"{type.FullName}:static:{name}";
-        if (!_fieldCache.TryGetValue(cacheKey, out var field))
-        {
-            field = type.GetField(name, NonPublicStaticFlags)
-                ?? throw new MissingFieldException($"Static field '{name}' not found in {type.Name}");
-            _fieldCache[cacheKey] = field;
-        }
-        return (T)field.GetValue(null);
+        var field = GetFieldInfo(type, name, isStatic: true);
+        var value = field.GetValue(null);
+
+        if (value is T typedValue) return typedValue;
+        throw new InvalidCastException($"Cannot cast {value?.GetType().Name ?? "null"} to {typeof(T).Name}");
     }
 
     internal static void SetStaticField<T>(this Type type, string name, T value)
     {
-        string cacheKey = $"{type.FullName}:static:{name}";
-        if (!_fieldCache.TryGetValue(cacheKey, out var field))
-        {
-            field = type.GetField(name, NonPublicStaticFlags)
-                ?? throw new MissingFieldException($"Static field '{name}' not found in {type.Name}");
-            _fieldCache[cacheKey] = field;
-        }
+        var field = GetFieldInfo(type, name, isStatic: true);
         field.SetValue(null, value);
+    }
+
+    private static FieldInfo GetFieldInfo(Type type, string name, bool isStatic)
+    {
+        var cacheKey = isStatic ? $"static:{name}" : name;
+        var key = (type, cacheKey);
+
+        return _fieldCache.GetOrAdd(key, k =>
+        {
+            var flags = isStatic ? NonPublicStaticFlags : NonPublicFlags;
+            var field = k.Item1.GetField(isStatic ? name : k.Item2, flags);
+
+            return field ?? throw new MissingFieldException(
+                $"{(isStatic ? "Static" : "")} field '{name}' not found in {k.Item1.Name}");
+        });
     }
 
     // ==== Property Operations (Cached) ====
@@ -72,85 +70,140 @@ internal static class ReflectExtension
     {
         if (obj == null) return default;
 
-        string cacheKey = $"{obj.GetType().FullName}:{name}";
-        if (!_propertyCache.TryGetValue(cacheKey, out var prop))
-        {
-            prop = obj.GetType().GetProperty(name, NonPublicFlags)
-                ?? throw new MissingMemberException($"Property '{name}' not found");
-            _propertyCache[cacheKey] = prop;
-        }
-        return (T)prop.GetValue(obj);
+        var property = GetPropertyInfo(obj.GetType(), name, isStatic: false);
+        var value = property.GetValue(obj);
+
+        return value is T typedValue ? typedValue : default;
     }
 
     internal static void SetProperty<T>(this object obj, string name, T value)
     {
         if (obj == null) return;
 
-        string cacheKey = $"{obj.GetType().FullName}:{name}";
-        if (!_propertyCache.TryGetValue(cacheKey, out var prop))
-        {
-            prop = obj.GetType().GetProperty(name, NonPublicFlags)
-                ?? throw new MissingMemberException($"Property '{name}' not found");
-            _propertyCache[cacheKey] = prop;
-        }
-        prop.SetValue(obj, value);
+        var property = GetPropertyInfo(obj.GetType(), name, isStatic: false);
+        property.SetValue(obj, value);
     }
 
+    // ==== Static Property Operations (Cached) ====
+    internal static T GetStaticProperty<T>(this Type type, string name)
+    {
+        var property = GetPropertyInfo(type, name, isStatic: true);
+        var value = property.GetValue(null);
+
+        if (value is T typedValue) return typedValue;
+        throw new InvalidCastException($"Cannot cast {value?.GetType().Name ?? "null"} to {typeof(T).Name}");
+    }
+
+    internal static void SetStaticProperty<T>(this Type type, string name, T value)
+    {
+        var property = GetPropertyInfo(type, name, isStatic: true);
+        property.SetValue(null, value);
+    }
+
+    private static PropertyInfo GetPropertyInfo(Type type, string name, bool isStatic)
+    {
+        var cacheKey = isStatic ? $"static:{name}" : name;
+        var key = (type, cacheKey);
+
+        return _propertyCache.GetOrAdd(key, k =>
+        {
+            var flags = isStatic ? NonPublicStaticFlags : NonPublicFlags;
+            var property = k.Item1.GetProperty(isStatic ? name : k.Item2, flags);
+
+            return property ?? throw new MissingMemberException(
+                $"{(isStatic ? "Static" : "")} property '{name}' not found in {k.Item1.Name}");
+        });
+    }
+
+    // ==== Coroutine Helpers ====
     internal static IEnumerator? GetCoroutine(this object obj, string name, params object[] parameters)
     {
-        if (obj == null) return default;
+        if (obj == null) return null;
 
-        object? coroutineResult = obj.InvokeMethod(name, parameters);
-        return (IEnumerator?)coroutineResult;
+        var result = obj.InvokeMethod(name, parameters);
+        return result as IEnumerator;
     }
 
-    internal static IEnumerator GetStaticCoroutine(this Type type, string name, params object[] parameters)
+    internal static IEnumerator? GetStaticCoroutine(this Type type, string name, params object[] parameters)
     {
-        object coroutineResult = type.InvokeStaticMethod(name, parameters);
-        return (IEnumerator)coroutineResult;
+        var result = type.InvokeStaticMethod(name, parameters);
+        return result as IEnumerator;
     }
 
     // ==== Method Operations (Cached) ====
     internal static object? InvokeMethod(this object obj, string name, params object[] parameters)
     {
-        if (obj == null) return default;
+        if (obj == null) return null;
 
-        string paramTypes = string.Join(",", parameters.Select(p => p.GetType().Name));
-        string cacheKey = $"{obj.GetType().FullName}:{name}({paramTypes})";
+        var paramTypes = GetParameterTypes(parameters);
+        var method = GetMethodInfo(obj.GetType(), name, paramTypes, isStatic: false);
 
-        if (!_methodCache.TryGetValue(cacheKey, out var method))
-        {
-            method = obj.GetType().GetMethod(name, NonPublicFlags, null, parameters.Select(p => p.GetType()).ToArray(), null)
-                ?? throw new MissingMethodException($"Method '{name}' not found");
-            _methodCache[cacheKey] = method;
-        }
         return method.Invoke(obj, parameters);
     }
 
-    internal static object InvokeStaticMethod(this Type type, string name, params object[] parameters)
+    internal static object? InvokeStaticMethod(this Type type, string name, params object[] parameters)
     {
-        string paramTypes = string.Join(",", parameters.Select(p => p.GetType().Name));
-        string cacheKey = $"{type.FullName}:static:{name}({paramTypes})";
+        var paramTypes = GetParameterTypes(parameters);
+        var method = GetMethodInfo(type, name, paramTypes, isStatic: true);
 
-        if (!_methodCache.TryGetValue(cacheKey, out var method))
-        {
-            method = type.GetMethod(name, NonPublicStaticFlags, null, parameters.Select(p => p.GetType()).ToArray(), null)
-                ?? throw new MissingMethodException($"Static method '{name}' not found in {type.Name}");
-            _methodCache[cacheKey] = method;
-        }
         return method.Invoke(null, parameters);
+    }
+
+    private static Type[] GetParameterTypes(object[] parameters)
+    {
+        if (parameters == null || parameters.Length == 0)
+            return Type.EmptyTypes;
+
+        return parameters.Select(p => p?.GetType() ?? typeof(object)).ToArray();
+    }
+
+    private static MethodInfo GetMethodInfo(Type type, string name, Type[] paramTypes, bool isStatic)
+    {
+        var key = (type, name, paramTypes.Length > 0 ? paramTypes : null);
+
+        return _methodCache.GetOrAdd(key, k =>
+        {
+            var flags = isStatic ? NonPublicStaticFlags : NonPublicFlags;
+            var method = k.Item1.GetMethod(k.Item2, flags, null, k.Item3 ?? Type.EmptyTypes, null);
+
+            return method ?? throw new MissingMethodException(
+                $"{(isStatic ? "Static" : "")} method '{k.Item2}' not found in {k.Item1.Name}");
+        });
     }
 
     // ==== Nested Type Lookup (Cached) ====
     internal static Type GetNestedType(this Type type, string name)
     {
-        string cacheKey = $"{type.FullName}:{name}";
-        if (!_nestedTypeCache.TryGetValue(cacheKey, out var nestedType))
+        var key = (type, name);
+
+        return _nestedTypeCache.GetOrAdd(key, k =>
         {
-            nestedType = type.GetNestedType(name, BindingFlags.NonPublic)
-                ?? throw new TypeLoadException($"Nested type '{name}' not found in {type.Name}");
-            _nestedTypeCache[cacheKey] = nestedType;
-        }
-        return nestedType;
+            var nestedType = k.Item1.GetNestedType(k.Item2, BindingFlags.NonPublic);
+            return nestedType ?? throw new TypeLoadException(
+                $"Nested type '{k.Item2}' not found in {k.Item1.Name}");
+        });
+    }
+
+    // Optional: Generic method invocation with type safety
+    internal static T? InvokeMethod<T>(this object obj, string name, params object[] parameters)
+    {
+        var result = obj.InvokeMethod(name, parameters);
+        return result is T typedResult ? typedResult : default;
+    }
+
+    internal static T InvokeStaticMethod<T>(this Type type, string name, params object[] parameters)
+    {
+        var result = type.InvokeStaticMethod(name, parameters);
+        if (result is T typedResult) return typedResult;
+        throw new InvalidCastException($"Cannot cast result to {typeof(T).Name}");
+    }
+
+    // ==== Utility Methods ====
+    public static void ClearCaches()
+    {
+        _fieldCache.Clear();
+        _propertyCache.Clear();
+        _methodCache.Clear();
+        _nestedTypeCache.Clear();
     }
 }

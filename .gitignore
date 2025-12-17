@@ -6,3 +6,4 @@
 /src/.vscode
 /src/References/Game/**.dll
 /src/References/Unity/**.dll
+/submodules

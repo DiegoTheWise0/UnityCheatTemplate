@@ -62,7 +62,7 @@ internal static class UI
         GUILayout.Space(10);
     }
 
-    internal static void ColorPicker(ref Color color, string label, System.Action<Color>? callback = null)
+    internal static void ColorPicker(ref Color color, string label, Action<Color>? callback = null)
     {
         Color previousColor = color;
 
@@ -71,13 +71,20 @@ internal static class UI
         GUILayout.BeginHorizontal();
         GUILayout.Label(label, GUILayout.Width(100));
 
-        Rect previewRect = GUILayoutUtility.GetRect(50, 20);
-        GUI.DrawTexture(previewRect, CreateColorTexture(color));
+        Rect previewRect = GUILayoutUtility.GetRect(60, 35);
+        GUI.DrawTexture(previewRect, CreateColorTexture(Color.black));
+        Rect innerRect = new(previewRect.x + 2, previewRect.y + 2, previewRect.width - 4, previewRect.height - 4);
+        GUI.DrawTexture(innerRect, CreateColorTexture(color));
+
+        GUILayout.Label($"#{ColorToHex(color)}", GUILayout.Width(70));
+
         GUILayout.EndHorizontal();
 
-        color.r = ColorComponentSlider("R", color.r, 0, 255);
-        color.g = ColorComponentSlider("G", color.g, 0, 255);
-        color.b = ColorComponentSlider("B", color.b, 0, 255);
+        GUILayout.Space(5);
+
+        color.r = EnhancedColorSlider("Red", color.r);
+        color.g = EnhancedColorSlider("Green", color.g);
+        color.b = EnhancedColorSlider("Blue", color.b);
 
         GUILayout.EndVertical();
 
@@ -85,23 +92,48 @@ internal static class UI
             callback?.Invoke(color);
     }
 
-    private static float ColorComponentSlider(string label, float value, int min, int max)
+    private static float EnhancedColorSlider(string label, float value)
     {
         GUILayout.BeginHorizontal();
-        GUILayout.Label(label, GUILayout.Width(20));
 
-        value = GUILayout.HorizontalSlider(value, 0f, 1f, GUILayout.Width(100));
+        // Color label with icon/spacer
+        GUILayout.Label(GetColorIcon(label), GUILayout.Width(20));
+        GUILayout.Label(label[0].ToString(), GUILayout.Width(20));
 
-        int intValue = Mathf.RoundToInt(value * 255);
-        string textValue = GUILayout.TextField(intValue.ToString(), GUILayout.Width(40));
+        // Slider
+        float newValue = GUILayout.HorizontalSlider(value, 0f, 1f, GUILayout.Width(100));
 
-        if (int.TryParse(textValue, out int parsedValue))
+        // Numeric input with better styling
+        GUILayout.BeginVertical(GUILayout.Width(50));
+
+        // Display both 0-255 and 0.00-1.00 values
+        int intValue = Mathf.RoundToInt(newValue * 255);
+        string displayText = GUILayout.TextField(intValue.ToString(), GUILayout.Width(40));
+
+        if (int.TryParse(displayText, out int parsedValue))
         {
-            value = Mathf.Clamp01(parsedValue / 255f);
+            newValue = Mathf.Clamp01(parsedValue / 255f);
         }
 
+        // Show normalized value below
+        GUILayout.Label(newValue.ToString("F2"), GUILayout.Width(40));
+        GUILayout.EndVertical();
+
         GUILayout.EndHorizontal();
-        return value;
+
+        return newValue;
+    }
+
+    private static string GetColorIcon(string label)
+    {
+        // Return different symbols based on color component
+        return label.ToLower() switch
+        {
+            "red" => "●",
+            "green" => "●",
+            "blue" => "●",
+            _ => "●",
+        };
     }
 
     private static Texture2D CreateColorTexture(Color color)
@@ -110,6 +142,14 @@ internal static class UI
         texture.SetPixel(0, 0, color);
         texture.Apply();
         return texture;
+    }
+
+    private static string ColorToHex(Color color)
+    {
+        int r = Mathf.RoundToInt(color.r * 255);
+        int g = Mathf.RoundToInt(color.g * 255);
+        int b = Mathf.RoundToInt(color.b * 255);
+        return $"{r:X2}{g:X2}{b:X2}";
     }
 
     internal static bool Checkbox(ref bool value, string label, string tooltip = "", System.Action<bool>? callback = null)
