@@ -20,8 +20,10 @@ public static class Loader
         CheatLogger.Load();
         DependencyResolver.Load(() =>
         {
+            CheatLogger.Info($"Loading {CheatInfo.Name} v{CheatInfo.Version}");
             Singleton<DataManager>.Instance.Load();
             MonoCheat.Load();
+            CheatLogger.Info($"{CheatInfo.Name} Successfully injected!");
         });
     }
 
@@ -32,10 +34,12 @@ public static class Loader
     /// <remarks>
     public static void Unload()
     {
+        CheatLogger.Info($"Unloading {CheatInfo.Name} v{CheatInfo.Version}");
         MonoCheat.Unload();
         ReflectExtension.ClearCaches();
         Singleton<DataManager>.Instance.Unload();
         Singleton<DataManager>.Dispose();
+        CheatLogger.Unload();
         DependencyResolver.Unload();
     }
 }

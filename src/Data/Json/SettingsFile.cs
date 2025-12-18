@@ -1,4 +1,6 @@
-﻿using UnityCheatTemplate.Utilities;
+﻿#pragma warning disable CS0649
+
+using UnityCheatTemplate.Utilities;
 using UnityEngine;
 
 namespace UnityCheatTemplate.Data.Json;

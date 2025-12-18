@@ -29,6 +29,7 @@ internal static class DependencyResolver
     /// <param name="callback">Action to execute after dependencies are successfully loaded.</param>
     internal static void Load(Action callback)
     {
+        CheatLogger.Info($"Loading embedded dependencies", nameof(DependencyResolver));
         AppDomain.CurrentDomain.AssemblyResolve += ResolveEmbeddedAssembly;
         LoadDependenciesList(callback);
     }

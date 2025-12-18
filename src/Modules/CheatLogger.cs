@@ -8,6 +8,8 @@ namespace UnityCheatTemplate.Modules;
 /// </summary>
 internal static class CheatLogger
 {
+    internal static List<string> Logs = [];
+
     /// <summary>
     /// Gets the log file name based on the cheat name.
     /// </summary>
@@ -31,6 +33,7 @@ internal static class CheatLogger
     /// </summary>
     internal static void Unload()
     {
+        Logs.Clear();
     }
 
     /// <summary>
@@ -41,8 +44,9 @@ internal static class CheatLogger
     internal static void Info(string msg, string tag = "Log")
     {
         string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
-        var format = $"{timestamp} [{tag}]: {msg}{Environment.NewLine}";
-        File.AppendAllText(FilePath, format);
+        var format = $"{timestamp} [{tag}]: {msg}";
+        File.AppendAllText(FilePath, format + Environment.NewLine);
+        Logs.Add(format);
     }
 
     /// <summary>
