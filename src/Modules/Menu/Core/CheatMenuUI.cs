@@ -1,45 +1,63 @@
 ﻿using System.Reflection;
 using UnityCheatTemplate.Data;
-using UnityCheatTemplate.Enums;
 using UnityCheatTemplate.Interfaces;
 using UnityCheatTemplate.Utilities;
 using UnityEngine;
 
 namespace UnityCheatTemplate.Modules.Menu.Core;
 
-internal class CheatMenuUI : ILoadable, ISingleton
+/// <summary>
+/// Main cheat menu UI system that provides a resizable window with tabbed interface.
+/// Implements both ILoadable and ISingleton interfaces for managed lifecycle and singleton access.
+/// </summary>
+internal sealed class CheatMenuUI : ILoadable, ISingleton
 {
     private bool _loaded;
     private bool _isOpen;
 
     private static List<CheatMenuTab> _allTabs = [];
-    private static UiTabs _currentTab;
+    private static uint _currentTab;
 
     private GUIStyle? _style;
-    internal Rect WindowRect = new(50f, 50f, 545f, 715f);
+    private GUIStyle? _resizeStyle;
 
-    // Add min/max size constraints
-    private readonly Vector2 _minWindowSize = new(400f, 400f);
+    /// <summary>
+    /// The current position and size of the cheat menu window.
+    /// </summary>
+    internal Rect WindowRect = new(50f, 50f, 650f, 750f);
+
+    private readonly Vector2 _minWindowSize = new(500f, 500f);
     private readonly Vector2 _maxWindowSize = new(1200f, 900f);
 
-    // For tracking window dragging and resizing
     private Rect _resizeHandle = new(0, 0, 20, 20);
     private bool _isResizing;
+    private Vector2 _menuScrollPos;
+    private Vector2 _tabScrollPos;
 
+    /// <summary>
+    /// Initializes and loads the cheat menu system.
+    /// </summary>
     public void Load()
     {
-        _currentTab = UiTabs.About;
+        _currentTab = 0;
         LoadTabs();
         _loaded = true;
     }
 
+    /// <summary>
+    /// Unloads and cleans up the cheat menu system.
+    /// </summary>
     public void Unload()
     {
         _loaded = false;
         _allTabs.Clear();
         _style = null;
+        _resizeStyle = null;
     }
 
+    /// <summary>
+    /// Dynamically loads all CheatMenuTab implementations from the assembly.
+    /// </summary>
     private static void LoadTabs()
     {
         try
@@ -66,7 +84,7 @@ internal class CheatMenuUI : ILoadable, ISingleton
                 }
             }
 
-            _allTabs = _allTabs.OrderBy(tab => tab.UiTabType).ToList();
+            _allTabs = _allTabs.OrderBy(tab => tab.TabIndex).ToList();
         }
         catch (Exception ex)
         {
@@ -74,6 +92,9 @@ internal class CheatMenuUI : ILoadable, ISingleton
         }
     }
 
+    /// <summary>
+    /// Updates the cheat menu state each frame.
+    /// </summary>
     internal void Update()
     {
         if (Input.GetKeyDown(KeyCode.Insert))
@@ -82,39 +103,65 @@ internal class CheatMenuUI : ILoadable, ISingleton
         }
     }
 
+    /// <summary>
+    /// Renders the cheat menu GUI elements.
+    /// </summary>
     internal void OnGUI()
     {
         if (!_loaded) return;
 
+
         _style ??= new GUIStyle(GUI.skin.label)
         {
             normal = { textColor = Color.white },
-            fontStyle = FontStyle.Bold
+            fontStyle = FontStyle.Bold,
+            fontSize = 12,
+            padding = new RectOffset(4, 4, 2, 2)
+        };
+
+        _resizeStyle ??= new GUIStyle(GUI.skin.label)
+        {
+            normal = { textColor = new Color(0.7f, 0.7f, 0.7f, 0.8f) },
+            alignment = TextAnchor.MiddleCenter,
+            fontSize = 10,
+            padding = new RectOffset(0, 0, 0, 0)
         };
 
         DrawWatermark();
 
         if (_isOpen)
         {
+
+            WindowRect.width = Mathf.Clamp(WindowRect.width, _minWindowSize.x, _maxWindowSize.x);
+            WindowRect.height = Mathf.Clamp(WindowRect.height, _minWindowSize.y, _maxWindowSize.y);
+
+            WindowRect.x = Mathf.Clamp(WindowRect.x, 0, Screen.width - 50);
+            WindowRect.y = Mathf.Clamp(WindowRect.y, 0, Screen.height - 50);
+
             WindowRect = GUILayout.Window(
                 0,
                 WindowRect,
                 MenuContent,
-                CheatInfo.Name
+                CheatInfo.Name,
+                GUILayout.MinWidth(_minWindowSize.x),
+                GUILayout.MinHeight(_minWindowSize.y)
             );
 
             _resizeHandle = new Rect(
-                WindowRect.x + WindowRect.width - 20,
-                WindowRect.y + WindowRect.height - 20,
-                20,
-                20
+                WindowRect.x + WindowRect.width - 24,
+                WindowRect.y + WindowRect.height - 24,
+                24,
+                24
             );
 
-            GUI.Box(_resizeHandle, "↙", _style);
+            GUI.Box(_resizeHandle, "↘", _resizeStyle);
             HandleResize();
         }
     }
 
+    /// <summary>
+    /// Handles window resizing logic and mouse interaction.
+    /// </summary>
     private void HandleResize()
     {
         Event currentEvent = Event.current;
@@ -163,6 +210,9 @@ internal class CheatMenuUI : ILoadable, ISingleton
         }
     }
 
+    /// <summary>
+    /// Draws the cheat watermark in the corner of the screen.
+    /// </summary>
     private void DrawWatermark()
     {
         if (_style == null) return;
@@ -180,6 +230,9 @@ internal class CheatMenuUI : ILoadable, ISingleton
         GUI.Label(new Rect(10f, 5f, 500f, 25f), watermark, _style);
     }
 
+    /// <summary>
+    /// Draws a tooltip near the mouse cursor if tooltip text is available.
+    /// </summary>
     internal void DrawTooltip()
     {
         if (string.IsNullOrEmpty(UI.Tooltip))
@@ -187,47 +240,106 @@ internal class CheatMenuUI : ILoadable, ISingleton
 
         GUIStyle tooltipStyle = GUI.skin.label;
         GUIContent tooltipContent = new(UI.Tooltip);
-        float tooltipWidth = tooltipStyle.CalcSize(tooltipContent).x + 10f;
-        float tooltipHeight = tooltipStyle.CalcHeight(tooltipContent, tooltipWidth - 10f) + 10f;
+
+        float maxWidth = 300f;
+        float tooltipWidth = Mathf.Min(tooltipStyle.CalcSize(tooltipContent).x + 20f, maxWidth);
+        float tooltipHeight = tooltipStyle.CalcHeight(tooltipContent, tooltipWidth - 20f) + 20f;
 
         Vector2 mousePos = Event.current.mousePosition;
-        var theme = Singleton<DataManager>.Instance.SettingsFile.c_Theme;
-        GUI.color = new Color(theme.r, theme.g, theme.b, 0.8f);
 
-        Rect tooltipRect = new(mousePos.x + 20f, mousePos.y + 20f, tooltipWidth, tooltipHeight);
-        GUI.Box(tooltipRect, GUIContent.none);
+        float x = mousePos.x + 20f;
+        float y = mousePos.y + 20f;
 
-        GUI.color = Color.white;
-        GUI.Label(new Rect(tooltipRect.x + 5f, tooltipRect.y + 5f, tooltipWidth - 10f, tooltipHeight - 10f), UI.Tooltip);
+        if (x + tooltipWidth > Screen.width)
+            x = Screen.width - tooltipWidth - 10f;
+
+        if (y + tooltipHeight > Screen.height)
+            y = mousePos.y - tooltipHeight - 10f;
+
+        Rect tooltipRect = new(x, y, tooltipWidth, tooltipHeight);
+
+        GUI.Box(tooltipRect, GUIContent.none, tooltipStyle);
+        GUI.Label(new Rect(tooltipRect.x + 10f, tooltipRect.y + 10f,
+            tooltipWidth - 20f, tooltipHeight - 20f), UI.Tooltip, tooltipStyle);
     }
 
-    private Vector2 _menuScrollPos;
+    /// <summary>
+    /// Renders the main menu content including tabs and current tab content.
+    /// </summary>
+    /// <param name="windowID">The Unity GUI window identifier.</param>
     private void MenuContent(int windowID)
     {
         GUI.DragWindow(new Rect(0, 0, WindowRect.width, 20));
-        GUILayout.BeginHorizontal();
-        foreach (var tab in _allTabs)
-        {
-            UI.Tab(tab.TabName, ref _currentTab, tab.UiTabType);
-        }
-        GUILayout.EndHorizontal();
 
-        _menuScrollPos = GUILayout.BeginScrollView(_menuScrollPos);
-        UI.ResetTooltip();
+        GUILayout.BeginVertical();
+        GUILayout.Space(5);
 
-        var currentTab = _allTabs.FirstOrDefault(tab => tab.UiTabType == _currentTab);
-        if (currentTab != null)
+        if (_allTabs.Count > 6)
+
         {
-            currentTab.OnGUI();
+            _tabScrollPos = GUILayout.BeginScrollView(_tabScrollPos, false, true,
+                GUILayout.Height(40), GUILayout.ExpandWidth(true));
+
+            GUILayout.BeginHorizontal(GUILayout.ExpandWidth(true));
+
+            foreach (var tab in _allTabs)
+            {
+
+                UI.Tab(tab.TabName, ref _currentTab, tab.TabIndex, false, 120, 32);
+                GUILayout.Space(2);
+
+            }
+
+            GUILayout.EndHorizontal();
+            GUILayout.EndScrollView();
         }
         else
         {
-            _currentTab = UiTabs.About;
+            GUILayout.BeginHorizontal(GUILayout.ExpandWidth(true));
+            GUILayout.FlexibleSpace();
+
+            foreach (var tab in _allTabs)
+            {
+                UI.Tab(tab.TabName, ref _currentTab, tab.TabIndex, false, 100, 32);
+                GUILayout.Space(4);
+
+            }
+
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
+        }
+
+        GUILayout.Space(2);
+
+        UI.Divider(1.5f);
+        GUILayout.Space(2);
+
+        _menuScrollPos = GUILayout.BeginScrollView(_menuScrollPos,
+            GUI.skin.scrollView, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+
+        UI.ResetTooltip();
+
+        var currentTab = _allTabs.FirstOrDefault(tab => tab.TabIndex == _currentTab);
+        if (currentTab != null)
+        {
+
+            GUILayout.BeginVertical(GUILayout.ExpandWidth(true));
+            GUILayout.Space(8);
+
+            currentTab.OnGUI();
+
+            GUILayout.Space(8);
+            GUILayout.EndVertical();
+        }
+        else
+        {
+            _currentTab = 0;
+            GUILayout.Label("No tab selected", GUI.skin.label);
         }
 
         GUILayout.EndScrollView();
-        DrawTooltip();
+        GUILayout.EndVertical();
 
-        GUI.DragWindow(new Rect(0, 0, 0, 20));
+        DrawTooltip();
     }
 }

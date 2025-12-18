@@ -1,13 +1,12 @@
-﻿using UnityCheatTemplate.Enums;
-using UnityCheatTemplate.Modules.Menu.Core;
+﻿using UnityCheatTemplate.Modules.Menu.Core;
 using UnityEngine;
 
 namespace UnityCheatTemplate.Modules.Menu.Tabs;
 
-internal class AboutTab : CheatMenuTab
+internal sealed class AboutTab : CheatMenuTab
 {
     internal override string TabName => "About";
-    internal override UiTabs UiTabType => UiTabs.About;
+    internal override uint TabIndex => 0;
 
     internal override void OnGUI()
     {
