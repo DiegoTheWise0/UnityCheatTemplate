@@ -1,13 +1,6 @@
-# Unity Cheat Template
+# Unity Cheat Template (Mono)
 
-A clean template for Unity game cheats with ESP, menu system, and hotkeys.
-
-# ⚠️ **IL2CPP Games**
-SharpMonoInjector only works with Mono games. For IL2CPP:
-1. Use **BepInEx** or **MelonLoader** as primary loader
-2. Make your cheat compatible with their framework
-3. Let them inject Mono first
-4. Then run your preferred injector
+A clean cheat template for Unity games that run on mono.
 
 ## 🔧 **Essential Modifications**
 
