@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace UnityCheatTemplate.Utilities;
+namespace UnityCheatTemplate.Modules.Menu.Core;
 
 /// <summary>
 /// Provides a comprehensive set of UI components and layout utilities for creating cheat menus and interfaces.

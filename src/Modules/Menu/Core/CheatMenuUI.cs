@@ -1,7 +1,6 @@
 ﻿using System.Reflection;
 using UnityCheatTemplate.Data;
 using UnityCheatTemplate.Interfaces;
-using UnityCheatTemplate.Utilities;
 using UnityEngine;
 
 namespace UnityCheatTemplate.Modules.Menu.Core;

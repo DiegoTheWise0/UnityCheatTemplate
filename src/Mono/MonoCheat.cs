@@ -37,6 +37,7 @@ internal sealed class MonoCheat : MonoBehaviour
         DontDestroyOnLoad(monoCheat);
 
         Singleton<CheatMenuUI>.Instance.Load();
+        Singleton<KeyBinder>.Instance.Load();
     }
 
     /// <summary>
@@ -52,6 +53,8 @@ internal sealed class MonoCheat : MonoBehaviour
 
         Singleton<CheatMenuUI>.Instance.Unload();
         Singleton<CheatMenuUI>.Dispose();
+        Singleton<KeyBinder>.Instance.Unload();
+        Singleton<KeyBinder>.Dispose();
         Singleton<EspCheat>.Dispose();
         Singleton<TriggerCheat>.Dispose();
     }
@@ -90,6 +93,7 @@ internal sealed class MonoCheat : MonoBehaviour
     /// </summary>
     public void Update()
     {
+        Singleton<KeyBinder>.Instance.Update();
         Singleton<CheatMenuUI>.Instance.Update();
         Singleton<TriggerCheat>.Instance.Update();
     }

@@ -1,6 +1,5 @@
 ﻿using UnityCheatTemplate.Data;
 using UnityCheatTemplate.Modules.Menu.Core;
-using UnityCheatTemplate.Utilities;
 
 namespace UnityCheatTemplate.Modules.Menu.Tabs;
 
