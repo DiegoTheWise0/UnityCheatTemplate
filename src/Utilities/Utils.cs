@@ -33,4 +33,35 @@ internal static class Utils
     /// </summary>
     /// <returns>The directory path containing the game's data folder, or the data folder path if the parent directory cannot be determined.</returns>
     internal static string GetPathToGame() => Path.GetDirectoryName(Application.dataPath) ?? Application.dataPath;
+
+    /// <summary>
+    /// Calculates the screen-space size of a renderer's bounds by projecting all corners of its bounding box to the screen.
+    /// </summary>
+    /// <param name="bounds">The <see cref="Bounds"/> of the renderer in world space.</param>
+    /// <param name="camera">The <see cref="Camera"/> from which to project the bounds to screen space.</param>
+    internal static Vector2 GetRendererSize(Bounds bounds, Camera camera)
+    {
+        Vector3[] corners = [
+            new Vector3(bounds.min.x, bounds.min.y, bounds.min.z),
+            new Vector3(bounds.max.x, bounds.min.y, bounds.min.z),
+            new Vector3(bounds.min.x, bounds.max.y, bounds.min.z),
+            new Vector3(bounds.max.x, bounds.max.y, bounds.min.z),
+            new Vector3(bounds.min.x, bounds.min.y, bounds.max.z),
+            new Vector3(bounds.max.x, bounds.min.y, bounds.max.z),
+            new Vector3(bounds.min.x, bounds.max.y, bounds.max.z),
+            new Vector3(bounds.max.x, bounds.max.y, bounds.max.z)
+        ];
+
+        Vector2 minScreenVector = camera.WorldToEyesPoint(corners[0]);
+        Vector2 maxScreenVector = minScreenVector;
+
+        for (int i = 1; i < corners.Length; i++)
+        {
+            Vector2 cornerScreen = camera.WorldToEyesPoint(corners[i]);
+            minScreenVector = Vector2.Min(minScreenVector, cornerScreen);
+            maxScreenVector = Vector2.Max(maxScreenVector, cornerScreen);
+        }
+
+        return new Vector2(Mathf.Abs(maxScreenVector.x - minScreenVector.x), Mathf.Abs(maxScreenVector.y - minScreenVector.y));
+    }
 }

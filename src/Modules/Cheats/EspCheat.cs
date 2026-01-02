@@ -53,7 +53,7 @@ internal sealed class EspCheat : ISingleton
                 screenPos.y - boxHeight * 0.5f
             );
 
-            Render.Box(
+            Render.DrawBox(
                 boxTopLeft,
                 new Vector2(boxWidth, boxHeight),
                 2f,
@@ -62,14 +62,11 @@ internal sealed class EspCheat : ISingleton
 
             if (!string.IsNullOrEmpty(name))
             {
-                Render.String(
+                Render.DrawLabel(
                     GUI.skin.label,
-                    screenPos.x,
-                    screenPos.y - boxHeight * 0.5f - 20f,
-                    200f, 20f,
+                    new Vector2(screenPos.x, screenPos.y - boxHeight * 0.5f - 20f),
                     name,
-                    Color.white,
-                    true
+                    Color.white
                 );
             }
         }
@@ -81,7 +78,7 @@ internal sealed class EspCheat : ISingleton
                 Mathf.Clamp(viewportPos.x * Screen.width, 0, Screen.width),
                 Mathf.Clamp((1 - viewportPos.y) * Screen.height, 0, Screen.height)
             );
-            Render.Line(screenCenter, tracerEndPos, 1f, color);
+            Render.DrawLine(screenCenter, tracerEndPos, 1f, color);
         }
     }
 }

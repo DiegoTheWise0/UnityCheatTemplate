@@ -8,6 +8,22 @@ namespace UnityCheatTemplate.Utilities;
 internal static class MathUtils
 {
     /// <summary>
+    /// Converts a world position to screen coordinates relative to the camera's view, with Y-axis inverted for GUI systems.
+    /// </summary>
+    /// <param name="camera">The camera from which to perform the transformation.</param>
+    /// <param name="worldPosition">The position in world space to convert to screen coordinates.</param>
+    /// <returns>
+    internal static Vector3 WorldToEyesPoint(this Camera camera, Vector3 worldPosition)
+    {
+        Vector3 screen = camera.WorldToViewportPoint(worldPosition);
+        screen.x *= Screen.width;
+        screen.y *= Screen.height;
+        screen.y = Screen.height - screen.y;
+
+        return screen;
+    }
+
+    /// <summary>
     /// Converts a world space position to screen space coordinates.
     /// </summary>
     /// <param name="camera">The camera used for the perspective transformation.</param>

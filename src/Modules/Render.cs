@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿using UnityCheatTemplate.Modules.Menu.Core;
+using UnityCheatTemplate.Utilities;
+using UnityEngine;
 
 namespace UnityCheatTemplate.Modules;
 
@@ -50,10 +52,10 @@ internal static class Render
     /// <param name="to">The ending point of the line.</param>
     /// <param name="thickness">The thickness of the line in pixels.</param>
     /// <param name="color">The color of the line.</param>
-    internal static void Line(Vector2 from, Vector2 to, float thickness, Color color)
+    internal static void DrawLine(Vector2 from, Vector2 to, float thickness, Color color)
     {
         Color = color;
-        Line(from, to, thickness);
+        DrawLine(from, to, thickness);
     }
 
     /// <summary>
@@ -62,12 +64,12 @@ internal static class Render
     /// <param name="from">The starting point of the line.</param>
     /// <param name="to">The ending point of the line.</param>
     /// <param name="thickness">The thickness of the line in pixels.</param>
-    internal static void Line(Vector2 from, Vector2 to, float thickness)
+    internal static void DrawLine(Vector2 from, Vector2 to, float thickness)
     {
         var delta = (to - from).normalized;
         var angle = Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg;
         GUIUtility.RotateAroundPivot(angle, from);
-        Box(from, Vector2.right * (from - to).magnitude, thickness, false);
+        DrawBox(from, Vector2.right * (from - to).magnitude, thickness, false);
         GUIUtility.RotateAroundPivot(-angle, from);
     }
 
@@ -79,10 +81,10 @@ internal static class Render
     /// <param name="thickness">The thickness of the box border in pixels.</param>
     /// <param name="color">The color of the box.</param>
     /// <param name="centered">Whether the position represents the center of the box (true) or the top-left corner (false).</param>
-    internal static void Box(Vector2 position, Vector2 size, float thickness, Color color, bool centered = true)
+    internal static void DrawBox(Vector2 position, Vector2 size, float thickness, Color color, bool centered = true)
     {
         Color = color;
-        Box(position, size, thickness, centered);
+        DrawBox(position, size, thickness, centered);
     }
 
     /// <summary>
@@ -92,7 +94,7 @@ internal static class Render
     /// <param name="size">The size of the box.</param>
     /// <param name="thickness">The thickness of the box border in pixels.</param>
     /// <param name="centered">Whether the position represents the center of the box (true) or the top-left corner (false).</param>
-    internal static void Box(Vector2 position, Vector2 size, float thickness, bool centered = true)
+    internal static void DrawBox(Vector2 position, Vector2 size, float thickness, bool centered = true)
     {
         var upperLeft = centered ? position - size / 2f : position;
         GUI.DrawTexture(new Rect(position.x, position.y, size.x, thickness), Texture2D.whiteTexture);
@@ -102,16 +104,49 @@ internal static class Render
     }
 
     /// <summary>
+    /// Draws an outline box at the specified position and size with a uniform border width.
+    /// </summary>
+    /// <param name="centrePosition">The center position of the box in screen coordinates (pixels).</param>
+    /// <param name="size">The dimensions of the box in screen pixels where x = width, y = height.</param>
+    /// <param name="lineWidth">The width of the border lines in pixels.</param>
+    /// <param name="color">The color to use for drawing the outline.</param>
+    internal static void DrawOutlineBox(Vector2 centrePosition, Vector2 size, float lineWidth, Color color)
+    {
+        float halfWidth = 0.5f * size.x;
+        float halfHeight = 0.5f * size.y;
+
+        float leftX = centrePosition.x - halfWidth;
+        float rightX = centrePosition.x + halfWidth;
+        float topY = centrePosition.y - halfHeight;
+        float bottomY = centrePosition.y + halfHeight;
+
+        Vector2 topLeft = new(leftX, topY);
+        Vector2 topSize = new(size.x, lineWidth);
+        DrawBox(topLeft, topSize, 1f, color);
+
+        Vector2 rightBorderTopLeft = new(rightX - lineWidth, topY);
+        Vector2 rightSize = new(lineWidth, size.y);
+        DrawBox(rightBorderTopLeft, rightSize, 1f, color);
+
+        Vector2 bottomBorderTopLeft = new(leftX, bottomY - lineWidth);
+        Vector2 bottomSize = new(size.x, lineWidth);
+        DrawBox(bottomBorderTopLeft, bottomSize, 1f, color);
+
+        Vector2 leftSize = new(lineWidth, size.y);
+        DrawBox(topLeft, leftSize, 1f, color);
+    }
+
+    /// <summary>
     /// Draws a cross shape (plus sign) with specified position, size, thickness, and color.
     /// </summary>
     /// <param name="position">The center position of the cross.</param>
     /// <param name="size">The size of each arm of the cross.</param>
     /// <param name="thickness">The thickness of the cross lines in pixels.</param>
     /// <param name="color">The color of the cross.</param>
-    internal static void Cross(Vector2 position, Vector2 size, float thickness, Color color)
+    internal static void DrawCross(Vector2 position, Vector2 size, float thickness, Color color)
     {
         Color = color;
-        Cross(position, size, thickness);
+        DrawCross(position, size, thickness);
     }
 
     /// <summary>
@@ -120,7 +155,7 @@ internal static class Render
     /// <param name="position">The center position of the cross.</param>
     /// <param name="size">The size of each arm of the cross.</param>
     /// <param name="thickness">The thickness of the cross lines in pixels.</param>
-    internal static void Cross(Vector2 position, Vector2 size, float thickness)
+    internal static void DrawCross(Vector2 position, Vector2 size, float thickness)
     {
         GUI.DrawTexture(new Rect(position.x - size.x / 2f, position.y, size.x, thickness), Texture2D.whiteTexture);
         GUI.DrawTexture(new Rect(position.x, position.y - size.y / 2f, thickness, size.y), Texture2D.whiteTexture);
@@ -131,46 +166,62 @@ internal static class Render
     /// </summary>
     /// <param name="position">The position to draw the dot.</param>
     /// <param name="color">The color of the dot.</param>
-    internal static void Dot(Vector2 position, Color color)
+    internal static void DrawDot(Vector2 position, Color color)
     {
         Color = color;
-        Dot(position);
+        DrawDot(position);
     }
 
     /// <summary>
     /// Draws a single pixel dot at the specified position using the current color.
     /// </summary>
     /// <param name="position">The position to draw the dot.</param>
-    internal static void Dot(Vector2 position)
+    internal static void DrawDot(Vector2 position)
     {
-        Box(position - Vector2.one, Vector2.one * 2f, 1f);
+        DrawBox(position - Vector2.one, Vector2.one * 2f, 1f);
     }
 
     /// <summary>
-    /// Draws text with optional styling, positioning, and coloring options.
+    /// Draws multiple text labels stacked vertically with optional offset between each label.
     /// </summary>
-    /// <param name="Style">The GUIStyle to use for rendering the text.</param>
-    /// <param name="X">The X coordinate position for the text.</param>
-    /// <param name="Y">The Y coordinate position for the text.</param>
-    /// <param name="W">The width of the text bounds.</param>
-    /// <param name="H">The height of the text bounds.</param>
-    /// <param name="str">The string text to render.</param>
-    /// <param name="col">The color of the text.</param>
-    /// <param name="centerx">Whether to center the text horizontally around the X position.</param>
-    /// <param name="centery">Whether to center the text vertically around the Y position.</param>
-    internal static void String(GUIStyle Style, float X, float Y, float W, float H, string str, Color col, bool centerx = false, bool centery = false)
+    /// <param name="style">The GUIStyle to use for rendering the labels. If null, a default bold label style is used.</param>
+    /// <param name="position">The base screen position (in pixels) where the first label will be centered.</param>
+    /// <param name="labels">Array of text strings to display as labels.</param>
+    /// <param name="color">The primary color for the label text.</param>
+    /// <param name="offset">Optional offset between successive labels. 
+    internal static void DrawLabels(GUIStyle? style, Vector2 position, string[] labels, Color color, Vector2? offset = null)
     {
-        GUIContent content = new GUIContent(str);
+        offset ??= new Vector2(0f, 15f);
+        Vector2 loopOffeset = Vector2.zero;
+        foreach (var str in labels)
+        {
+            DrawLabel(style, position + loopOffeset, str, color);
+            loopOffeset += offset.Value;
+        }
+    }
 
-        Vector2 size = Style.CalcSize(content);
-        float fX = centerx ? (X - size.x / 2f) : X,
-            fY = centery ? (Y - size.y / 2f) : Y;
+    /// <summary>
+    /// Draws a single text label with a drop shadow effect for better readability against varying backgrounds.
+    /// </summary>
+    /// <param name="style">The GUIStyle to use for rendering the label. If null, a default bold label style is created.</param>
+    /// <param name="position">The screen position (in pixels) where the label will be centered.</param>
+    /// <param name="label">The text content to display.</param>
+    /// <param name="color">The primary color for the label text.</param>
+    internal static void DrawLabel(GUIStyle? style, Vector2 position, string label, Color color)
+    {
+        style ??= new(GUI.skin.label)
+        {
+            fontStyle = FontStyle.Bold
+        };
 
-        Style.normal.textColor = Color.black;
-        GUI.Label(new Rect(fX, fY, size.x, H), str, Style);
+        Vector2 size = style.CalcSize(new GUIContent(label));
+        Vector2 newPosition = position - size * 0.5f;
 
-        Style.normal.textColor = col;
-        GUI.Label(new Rect(fX + 1f, fY + 1f, size.x, H), str, Style);
+        style.normal.textColor = Color.black;
+        GUI.Label(new Rect(newPosition.x, newPosition.y, size.x, size.y), label, style);
+
+        style.normal.textColor = color;
+        GUI.Label(new Rect(newPosition.x + 1, newPosition.y + 1, size.x, size.y), label, style);
     }
 
     /// <summary>
@@ -180,7 +231,7 @@ internal static class Render
     /// <param name="radius">The radius of the circle in pixels.</param>
     /// <param name="thickness">The thickness of the circle outline in pixels.</param>
     /// <param name="color">The color of the circle outline.</param>
-    internal static void Circle(Vector2 center, float radius, float thickness, Color color)
+    internal static void DrawCircle(Vector2 center, float radius, float thickness, Color color)
     {
         Color = color;
         Vector2 previousPoint = center + new Vector2(radius, 0);
@@ -189,7 +240,7 @@ internal static class Render
         {
             float angle = i * Mathf.Deg2Rad;
             Vector2 nextPoint = center + new Vector2(radius * Mathf.Cos(angle), radius * Mathf.Sin(angle));
-            Line(previousPoint, nextPoint, thickness);
+            DrawLine(previousPoint, nextPoint, thickness);
             previousPoint = nextPoint;
         }
     }
@@ -200,7 +251,7 @@ internal static class Render
     /// <param name="center">The center position of the circle.</param>
     /// <param name="radius">The radius of the circle in pixels.</param>
     /// <param name="color">The fill color of the circle.</param>
-    internal static void FilledCircle(Vector2 center, float radius, Color color)
+    internal static void DrawFilledCircle(Vector2 center, float radius, Color color)
     {
         Color = color;
         float sqrRadius = radius * radius;
@@ -208,6 +259,32 @@ internal static class Render
         for (float y = -radius; y <= radius; y++)
             for (float x = -radius; x <= radius; x++)
                 if (x * x + y * y <= sqrRadius)
-                    Line(center + new Vector2(x, y), center + new Vector2(x + 1, y), 1f);
+                    DrawLine(center + new Vector2(x, y), center + new Vector2(x + 1, y), 1f);
+    }
+
+
+    /// <summary>
+    /// Draws an outline around renderer bounds in screen space with an optional text label.
+    /// </summary>
+    /// <param name="camera">The camera used for world-to-screen projection.</param>
+    /// <param name="bounds">The world-space bounds of the renderer to outline.</param>
+    /// <param name="color">The color to use for the outline.</param>
+    /// <param name="label">Optional text label to display at the bounds center. 
+    internal static void DrawBounds(Camera camera, Bounds bounds, Color color, string? label, float cutOffDistance = 1f)
+    {
+        Vector3 rendererCentrePoint = camera.WorldToEyesPoint(bounds.center);
+
+        if (rendererCentrePoint.z <= cutOffDistance) return;
+
+        DrawOutlineBox(
+            rendererCentrePoint, Utils.GetRendererSize(bounds, camera),
+            1.0f,
+            color
+        );
+
+        if (label != null)
+        {
+            DrawLabel(Singleton<CheatMenuUI>.Instance.Style, rendererCentrePoint, label, color);
+        }
     }
 }

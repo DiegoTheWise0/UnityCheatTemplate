@@ -17,7 +17,7 @@ internal sealed class CheatMenuUI : ILoadable, ISingleton
     private static List<CheatMenuTab> _allTabs = [];
     private static uint _currentTab;
 
-    private GUIStyle? _style;
+    internal GUIStyle? Style;
     private GUIStyle? _resizeStyle;
 
     /// <summary>
@@ -50,7 +50,7 @@ internal sealed class CheatMenuUI : ILoadable, ISingleton
     {
         _loaded = false;
         _allTabs.Clear();
-        _style = null;
+        Style = null;
         _resizeStyle = null;
     }
 
@@ -110,7 +110,7 @@ internal sealed class CheatMenuUI : ILoadable, ISingleton
         if (!_loaded) return;
 
 
-        _style ??= new GUIStyle(GUI.skin.label)
+        Style ??= new GUIStyle(GUI.skin.label)
         {
             normal = { textColor = Color.white },
             fontStyle = FontStyle.Bold,
@@ -214,7 +214,7 @@ internal sealed class CheatMenuUI : ILoadable, ISingleton
     /// </summary>
     private void DrawWatermark()
     {
-        if (_style == null) return;
+        if (Style == null) return;
 
         GUI.backgroundColor = new Color(23f / 255f, 23f / 255f, 23f / 255f, 1f);
         GUI.contentColor = Color.white;
@@ -226,7 +226,7 @@ internal sealed class CheatMenuUI : ILoadable, ISingleton
             watermark += " | Press INSERT";
         }
 
-        GUI.Label(new Rect(10f, 5f, 500f, 25f), watermark, _style);
+        GUI.Label(new Rect(10f, 5f, 500f, 25f), watermark, Style);
     }
 
     /// <summary>
